@@ -10,6 +10,11 @@ L.Control.LayerPanel = L.Control.Layers.extend({
      initialize: function(baseLayers, overlays, id, options){
          this._container = L.DomUtil.get(id);
          L.Control.Layers.prototype.initialize.call(this, baseLayers, overlays, options);
+
+         if (options.hasOwnProperty("legendFn")){
+             this._legendFn = options.legendFn;
+         }
+         
      },
 
     _initLayout: function(){
@@ -39,7 +44,7 @@ L.Control.LayerPanel = L.Control.Layers.extend({
         var layer = this._layers[layerId].layer;
         if (typeof layer.legendObjs === 'undefined')
         {
-            layer.legendObjs = MT.Wms.createLegend(layer);
+            layer.legendObjs = this._legendFn(layer);
         }
         else
         {
@@ -79,9 +84,9 @@ L.Control.LayerPanel = L.Control.Layers.extend({
 
     _addItem: function(obj){
         var label = document.createElement('label'),
-            checked = this._map.hasLayer(obj.layer),
-            input, legendBtn, deleteBtn, pullLeft, pullRight,
-            holder = document.createElement('div');
+        checked = this._map.hasLayer(obj.layer),
+        input, legendBtn, deleteBtn, pullLeft, pullRight,
+        holder = document.createElement('div');
         holder.className = "row row-layer-control";
         pullLeft = document.createElement('div');
         pullLeft.className = "pull-left";
@@ -89,37 +94,36 @@ L.Control.LayerPanel = L.Control.Layers.extend({
         pullRight.className = "pull-right";
 
         if (obj.overlay){
-            //holder.className = 'checkbox';
             input = document.createElement('input');
             input.className = 'leaflet-control-layers-selector';
             input.type='checkbox';
             input.defaultChecked = checked;
 
-            //data-placement="bottom" data-toggle="tooltip" title="Select a WMS service to browse layers
-
             var buttonClass = "btn btn-secondary btn-layer-control";
             legendBtn = document.createElement('a');
             legendBtn.className = buttonClass;
-            var legendIcon = document.createElement('i');
-            legendIcon.className = "fa fa-list-ul";
-            legendBtn.setAttribute("data-placement", "left");
-            legendBtn.setAttribute("data-toggle", "tooltip");
-            legendBtn.setAttribute("title", "Add the layer's legend to the map (if available)");
-            legendBtn.appendChild(legendIcon);
+
+            if (this._legendFn != undefined){
+                var legendIcon = document.createElement('i');
+                legendIcon.className = "fa fa-list-ul";
+                legendBtn.setAttribute("data-placement", "left");
+                legendBtn.setAttribute("data-toggle", "tooltip");
+                legendBtn.setAttribute("title", "Add the layer's legend to the map (if available)");
+                legendBtn.appendChild(legendIcon);
+                L.DomEvent.on(legendBtn, 'click', function(){this._onLegendClick(input.layerId);}, this);
+                pullRight.appendChild(legendBtn);
+            }
 
             deleteBtn = document.createElement('a');
             deleteBtn.className = buttonClass;
             deleteBtn.setAttribute("data-placement", "left");
             deleteBtn.setAttribute("data-toggle", "tooltip");
             deleteBtn.setAttribute("title", "Delete layer");
-            var deletIcon = document.createElement('i');
-            deletIcon.className = "fa fa-trash";
-            deleteBtn.appendChild(deletIcon);
-
-            pullRight.appendChild(legendBtn);
+            var deleteIcon = document.createElement('i');
+            deleteIcon.className = "fa fa-trash";
+            deleteBtn.appendChild(deletIcon);           
             pullRight.appendChild(deleteBtn);
-
-            L.DomEvent.on(legendBtn, 'click', function(){this._onLegendClick(input.layerId);}, this);
+            
             L.DomEvent.on(deleteBtn, 'click', function(){this._onDeleteClick(input.layerId);}, this);
 
         } else {
@@ -167,6 +171,6 @@ L.Control.LayerPanel = L.Control.Layers.extend({
 });
 
 L.control.layerpanel = function (baseLayers, overlays, id, options) {
-    return new L.Control.LayerPanel(baseLayers, overlays, id,options);
+    return new L.Control.LayerPanel(baseLayers, overlays, id, options);
 };
 
